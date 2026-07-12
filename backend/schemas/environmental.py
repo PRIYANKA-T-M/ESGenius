@@ -59,6 +59,20 @@ class DashboardResponse(BaseModel):
     goal_completion: float
 
 
+# --- AI Import ---
+class ExtractedInvoiceData(BaseModel):
+    department: str
+    activity_type: str
+    quantity: float
+    unit: str
+
+class AIImportResponse(BaseModel):
+    message: str
+    extracted_data: ExtractedInvoiceData
+    transaction: CarbonTransactionResponse
+    dashboard_summary: dict
+
+
 # --- Environmental Goal ---
 class EnvironmentalGoalCreate(BaseModel):
     department_id: int

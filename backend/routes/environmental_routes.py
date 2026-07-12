@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
@@ -11,7 +11,10 @@ from backend.schemas.environmental import (
     CarbonTransactionCreate, CarbonTransactionResponse,
     EnvironmentalGoalCreate, EnvironmentalGoalResponse,
     DashboardResponse,
+    ExtractedInvoiceData, AIImportResponse,
 )
+
+from backend.services.gemini_service import extract_invoice_data
 
 router = APIRouter()
 
@@ -134,3 +137,72 @@ def create_environmental_goal(payload: EnvironmentalGoalCreate, db: Session = De
     db.commit()
     db.refresh(goal)
     return goal
+
+
+# --- EcoPilot AI Import ---
+@router.post("/environment/ai-import", response_model=AIImportResponse, status_code=201)
+async def ai_import_invoice(
+    file: UploadFile = File(..., description="Fuel/energy invoice — PNG, JPEG, or PDF"),
+    db: Session = Depends(get_db),
+):
+    # 1. Read uploaded bytes and validate MIME type
+    mime_type = file.content_type or ""
+    file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+    # 2. Send to Gemini — all AI logic lives in the service
+    extracted = extract_invoice_data(file_bytes, mime_type)
+
+    # 3. Resolve department by name (case-insensitive)
+    department = (
+        db.query(Department)
+        .filter(func.lower(Department.name) == extracted["department"].lower())
+        .first()
+    )
+    if not department:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Department '{extracted['department']}' not found. Add it first via POST /departments.",
+        )
+
+    # 4. Resolve emission factor by activity_type (case-insensitive)
+    ef = (
+        db.query(EmissionFactor)
+        .filter(func.lower(EmissionFactor.activity_type) == extracted["activity_type"].lower())
+        .first()
+    )
+    if not ef:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Emission factor for '{extracted['activity_type']}' not found.",
+        )
+
+    # 5. Calculate carbon emission — same formula as existing CRUD
+    carbon_emission = round(extracted["quantity"] * ef.factor, 4)
+
+    # 6. Insert CarbonTransaction — reusing existing ORM model
+    txn = CarbonTransaction(
+        department_id=department.id,
+        activity_type=ef.activity_type,
+        quantity=extracted["quantity"],
+        emission_factor_id=ef.id,
+        carbon_emission=carbon_emission,
+    )
+    db.add(txn)
+    db.commit()
+    db.refresh(txn)
+
+    # 7. Lightweight dashboard summary (no extra query overhead)
+    total_emissions = db.query(func.sum(CarbonTransaction.carbon_emission)).scalar() or 0.0
+    total_transactions = db.query(func.count(CarbonTransaction.id)).scalar() or 0
+
+    return AIImportResponse(
+        message="Invoice processed successfully.",
+        extracted_data=ExtractedInvoiceData(**extracted),
+        transaction=CarbonTransactionResponse.model_validate(txn),
+        dashboard_summary={
+            "total_emissions": round(total_emissions, 4),
+            "total_transactions": total_transactions,
+        },
+    )

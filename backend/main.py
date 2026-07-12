@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv("backend/.env")
+
 from fastapi import FastAPI
 from backend.database import engine
 from backend.models.environmental import Base

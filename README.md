@@ -1,4 +1,4 @@
-# Governance Module Integration Guide
+# ESGenius Governance Module Integration Guide
 
 Dear Team Leader,
 

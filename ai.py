@@ -57,7 +57,7 @@ async def draft_compliance_email(issue):
     Draft a professional but urgent email to an employee reminding them about an overdue compliance issue.
     
     Issue Title: {issue.title}
-    Department: {issue.department}
+    Department ID: {issue.department_id}
     Due Date: {issue.due_date}
     Severity: {issue.severity.value}
     

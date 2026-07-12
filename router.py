@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
@@ -13,7 +14,7 @@ except ImportError:
 
 # Fallback dependency to allow the module to be standalone for testing.
 try:
-    from backend.database import get_db
+    from backend.database import get_db  # type: ignore
 except ImportError:
     def get_db():
         yield None
@@ -53,10 +54,10 @@ async def update_issue(issue_id: int, issue: schemas.ComplianceIssueUpdate, db: 
         raise HTTPException(status_code=404, detail="Issue not found")
     return db_issue
 
-# --- Reports & Dashboard ---
-@router.get("/dashboard/score")
-async def get_department_score(department: str, db: Session = Depends(get_db)):
-    return score.calculate_department_score(db, department)
+# --- Governance Score ---
+@router.get("/score")
+async def get_score(department_id: int = 1, db: Session = Depends(get_db)):
+    return score.calculate_department_score(db, department_id)
 
 # --- AI Endpoints ---
 @router.post("/ai/summarize-policy")

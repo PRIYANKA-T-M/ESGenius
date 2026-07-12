@@ -7,7 +7,7 @@ from sqlalchemy.orm import declarative_base, relationship
 # In production, this would be imported from the shared database module:
 # from backend.database import Base
 try:
-    from backend.database import Base
+    from backend.database import Base  # type: ignore
 except ImportError:
     Base = declarative_base()
 
@@ -23,7 +23,7 @@ class Severity(PyEnum):
     CRITICAL = "CRITICAL"
 
 class Policy(Base):
-    __tablename__ = "gov_policies"
+    __tablename__ = "policies"
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True, nullable=False)
@@ -36,14 +36,18 @@ class Policy(Base):
     issues = relationship("ComplianceIssue", back_populates="policy")
 
 class ComplianceIssue(Base):
-    __tablename__ = "gov_compliance_issues"
+    __tablename__ = "compliance_issues"
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True, nullable=False)
     description = Column(Text, nullable=True)
-    policy_id = Column(Integer, ForeignKey("gov_policies.id"), nullable=True)
-    owner_id = Column(String, index=True, nullable=False) # Simplified as per feedback
-    department = Column(String, index=True, nullable=False)
+    policy_id = Column(Integer, ForeignKey("policies.id"), nullable=True)
+    
+    # We use Integer here instead of a hard ForeignKey for now, 
+    # so your module can run independently before the Team Leader merges the Employees/Departments tables.
+    owner_employee_id = Column(Integer, index=True, nullable=False)
+    department_id = Column(Integer, index=True, nullable=False)
+    
     due_date = Column(Date, nullable=False)
     status = Column(Enum(ComplianceStatus), default=ComplianceStatus.OPEN, index=True)
     severity = Column(Enum(Severity), default=Severity.LOW, index=True)

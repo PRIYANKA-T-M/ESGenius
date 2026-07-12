@@ -25,8 +25,8 @@ class ComplianceIssueBase(BaseModel):
     title: str
     description: Optional[str] = None
     policy_id: Optional[int] = None
-    owner_id: str
-    department: str
+    owner_employee_id: int
+    department_id: int
     due_date: date
     severity: Severity
 
@@ -36,8 +36,8 @@ class ComplianceIssueCreate(ComplianceIssueBase):
 class ComplianceIssueUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    owner_id: Optional[str] = None
-    department: Optional[str] = None
+    owner_employee_id: Optional[int] = None
+    department_id: Optional[int] = None
     due_date: Optional[date] = None
     status: Optional[ComplianceStatus] = None
     severity: Optional[Severity] = None

@@ -2,14 +2,14 @@ from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 from . import models
 
-def calculate_department_score(db: Session, department: str) -> Dict[str, Any]:
+def calculate_department_score(db: Session, department_id: int) -> Dict[str, Any]:
     """
     Calculates the explainable Governance Score for a specific department.
     Base score: 100
     Deductions: Open (-1), Medium (-2), High (-5), Critical (-10)
     Additions: Closed issue (+2)
     """
-    issues = db.query(models.ComplianceIssue).filter(models.ComplianceIssue.department == department).all()
+    issues = db.query(models.ComplianceIssue).filter(models.ComplianceIssue.department_id == department_id).all()
     
     score = 100
     breakdown = []
@@ -39,7 +39,7 @@ def calculate_department_score(db: Session, department: str) -> Dict[str, Any]:
         score = 0
         
     return {
-        "department": department,
-        "score": score,
+        "department_id": department_id,
+        "governance_score": score,
         "breakdown": breakdown
     }

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List
 
 from backend.database import get_db
@@ -9,6 +10,7 @@ from backend.schemas.environmental import (
     EmissionFactorCreate, EmissionFactorResponse,
     CarbonTransactionCreate, CarbonTransactionResponse,
     EnvironmentalGoalCreate, EnvironmentalGoalResponse,
+    DashboardResponse,
 )
 
 router = APIRouter()
@@ -76,6 +78,46 @@ def create_carbon_transaction(payload: CarbonTransactionCreate, db: Session = De
     db.commit()
     db.refresh(txn)
     return txn
+
+
+# --- Dashboard ---
+@router.get("/environment/dashboard", response_model=DashboardResponse)
+def get_dashboard(db: Session = Depends(get_db)):
+    total_departments = db.query(func.count(Department.id)).scalar() or 0
+    total_transactions = db.query(func.count(CarbonTransaction.id)).scalar() or 0
+    total_carbon_emission = round(db.query(func.sum(CarbonTransaction.carbon_emission)).scalar() or 0.0, 4)
+
+    # Department with highest total carbon emission
+    top = (
+        db.query(Department.name, func.sum(CarbonTransaction.carbon_emission).label("total"))
+        .join(CarbonTransaction, CarbonTransaction.department_id == Department.id)
+        .group_by(Department.id)
+        .order_by(func.sum(CarbonTransaction.carbon_emission).desc())
+        .first()
+    )
+    if top is None:
+        raise HTTPException(status_code=404, detail="No transaction data available for dashboard.")
+
+    highest_emission_department = top.name
+    highest_emission_value = round(top.total, 4)
+
+    # Average goal completion: avg(current / target * 100) across all goals
+    goals = db.query(EnvironmentalGoal.current, EnvironmentalGoal.target).all()
+    if not goals:
+        goal_completion = 0.0
+    else:
+        goal_completion = round(
+            sum((g.current / g.target * 100) for g in goals if g.target > 0) / len(goals), 2
+        )
+
+    return DashboardResponse(
+        total_departments=total_departments,
+        total_transactions=total_transactions,
+        total_carbon_emission=total_carbon_emission,
+        highest_emission_department=highest_emission_department,
+        highest_emission_value=highest_emission_value,
+        goal_completion=goal_completion,
+    )
 
 
 # --- Environmental Goals ---

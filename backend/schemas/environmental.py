@@ -49,6 +49,16 @@ class CarbonTransactionResponse(BaseModel):
         from_attributes = True
 
 
+# --- Dashboard ---
+class DashboardResponse(BaseModel):
+    total_departments: int
+    total_transactions: int
+    total_carbon_emission: float
+    highest_emission_department: str
+    highest_emission_value: float
+    goal_completion: float
+
+
 # --- Environmental Goal ---
 class EnvironmentalGoalCreate(BaseModel):
     department_id: int

@@ -22,7 +22,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base.metadata.create_all(bind=engine)
 
 # 4. Create the FastAPI app
-app = FastAPI(title="EcoPilot Governance API (Local Test)")
+app = FastAPI(title="ESGenius Governance API (Local Test)")
 
 # Allow frontend to talk to this local server
 app.add_middleware(

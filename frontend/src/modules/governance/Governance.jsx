@@ -4,6 +4,7 @@ import {
   Search, Settings, Users, LayoutDashboard, Globe
 } from 'lucide-react';
 import { useGovernanceApi } from './hooks/useGovernanceApi';
+import { Link } from 'react-router-dom';
 
 import GovernanceCards from './components/GovernanceCards';
 import ComplianceTrendChart from './components/ComplianceTrendChart';
@@ -42,12 +43,9 @@ const Governance = () => {
         </div>
         
         <nav className="flex-1 py-4 space-y-1 px-3">
-          <SidebarItem icon={<LayoutDashboard />} label="Dashboard" />
-          <SidebarItem icon={<Globe />} label="Environmental" />
-          <SidebarItem icon={<Users />} label="Social" />
-          <SidebarItem icon={<ShieldCheck />} label="Governance" active />
-          <SidebarItem icon={<BarChart />} label="Reports" />
-          <SidebarItem icon={<Settings />} label="Settings" />
+          <SidebarItem icon={<Globe />} label="Environmental" to="/environmental" />
+          <SidebarItem icon={<Users />} label="Social" to="/social" />
+          <SidebarItem icon={<ShieldCheck />} label="Governance" to="/governance" active />
         </nav>
       </aside>
 
@@ -159,10 +157,10 @@ const Governance = () => {
 };
 
 // Simple Sidebar Item Component
-const SidebarItem = ({ icon, label, active }) => {
+const SidebarItem = ({ icon, label, active, to }) => {
   return (
-    <a 
-      href="#" 
+    <Link 
+      to={to || "#"} 
       className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
         active 
           ? 'bg-blue-50 text-blue-700' 
@@ -173,7 +171,7 @@ const SidebarItem = ({ icon, label, active }) => {
         {icon}
       </span>
       {label}
-    </a>
+    </Link>
   );
 };
 

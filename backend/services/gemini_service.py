@@ -1,4 +1,10 @@
 import os
+
+from pathlib import Path
+from dotenv import load_dotenv
+
+env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(env_path)
 import json
 import google.generativeai as genai
 from PIL import Image
@@ -52,7 +58,7 @@ def verify_proof_with_gemini(image_path: str, activity_description: str) -> dict
     
     try:
         # Call gemini-1.5-flash
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.0-flash")
         response = model.generate_content([prompt, img])
         
         if not response or not response.text:

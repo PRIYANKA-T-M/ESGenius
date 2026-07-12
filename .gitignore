@@ -7,3 +7,6 @@ __pycache__/
 .env
 frontend/dist/
 uploads/
+backend/.env
+backend/__pycache__/
+*.pyc

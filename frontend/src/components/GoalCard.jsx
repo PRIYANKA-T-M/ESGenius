@@ -1,11 +1,18 @@
-export default function GoalCard({ goal }) {
-  const pct = goal.target > 0
-    ? Math.min((goal.current / goal.target) * 100, 100)
-    : 0
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  })
+}
 
+export default function GoalCard({ goal, deptMap }) {
+  const pct    = goal.target > 0 ? Math.min((goal.current / goal.target) * 100, 100) : 0
   const radius = 36
   const circ   = 2 * Math.PI * radius
   const offset = circ - (pct / 100) * circ
+  const deptName = deptMap?.[goal.department_id] || `Dept #${goal.department_id}`
+
+  // colour ring based on completion
+  const ringColor = pct >= 75 ? '#16a34a' : pct >= 40 ? '#f59e0b' : '#ef4444'
 
   return (
     <div className="goal-card">
@@ -14,6 +21,7 @@ export default function GoalCard({ goal }) {
         <circle
           cx="45" cy="45" r={radius}
           className="ring-fill"
+          stroke={ringColor}
           strokeDasharray={circ}
           strokeDashoffset={offset}
           transform="rotate(-90 45 45)"
@@ -22,14 +30,19 @@ export default function GoalCard({ goal }) {
           {pct.toFixed(0)}%
         </text>
       </svg>
+
       <div className="goal-info">
-        <p className="goal-dept">Dept #{goal.department_id}</p>
+        <p className="goal-dept">{deptName}</p>
+        <div className="goal-progress-bar">
+          <div className="goal-progress-fill" style={{ width: `${pct}%`, background: ringColor }} />
+        </div>
         <p className="goal-numbers">
-          {goal.current} / {goal.target} kg CO₂
+          <span style={{ color: ringColor, fontWeight: 700 }}>{goal.current}</span>
+          {' / '}
+          <span>{goal.target}</span>
+          {' kg CO₂'}
         </p>
-        <p className="goal-deadline">
-          Due: {new Date(goal.deadline).toLocaleDateString()}
-        </p>
+        <p className="goal-deadline">Due: {formatDate(goal.deadline)}</p>
       </div>
     </div>
   )

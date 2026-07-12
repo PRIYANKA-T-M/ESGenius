@@ -1,72 +1,97 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import axios from 'axios';
 
-// Using fetch API for simplicity in hackathon, assuming backend runs on localhost:8000
 const API_BASE = 'http://localhost:8000/api/governance';
+
+// Create a single reusable Axios instance
+const apiClient = axios.create({
+  baseURL: API_BASE,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 export const useGovernanceApi = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchIssues = async () => {
+  const fetchIssues = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const res = await fetch(`${API_BASE}/issues`);
-      if (!res.ok) throw new Error('Failed to fetch issues');
-      return await res.json();
+      const response = await apiClient.get('/issues');
+      return response.data;
     } catch (err) {
-      setError(err.message); return [];
+      setError(err.message || 'Failed to load issues');
+      return [];
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const getScore = async (department_id) => {
+  const fetchPolicies = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const res = await fetch(`${API_BASE}/score?department_id=${department_id}`);
-      if (!res.ok) throw new Error('Failed to fetch score');
-      return await res.json();
+      const response = await apiClient.get('/policies');
+      return response.data;
     } catch (err) {
-      setError(err.message); return null;
+      setError(err.message || 'Failed to load policies');
+      return [];
     } finally {
       setLoading(false);
     }
-  };
-  
-  const summarizePolicy = async (file) => {
+  }, []);
+
+  const getScore = useCallback(async (department_id) => {
+    setLoading(true); setError(null);
+    try {
+      const response = await apiClient.get(`/score`, { params: { department_id } });
+      return response.data;
+    } catch (err) {
+      setError(err.message || 'Failed to load governance score');
+      return { governance_score: 0, breakdown: [] };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const summarizePolicy = useCallback(async (file) => {
     setLoading(true); setError(null);
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch(`${API_BASE}/ai/summarize-policy`, {
-        method: 'POST',
-        body: formData,
+      
+      const response = await apiClient.post('/ai/summarize-policy', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      if (!res.ok) throw new Error('Failed to summarize policy');
-      return await res.json();
+      return response.data;
     } catch (err) {
-      setError(err.message); return null;
+      setError(err.message || 'Failed to summarize policy');
+      return null;
     } finally {
       setLoading(false);
     }
-  };
-  
-  const draftEmail = async (issueId) => {
+  }, []);
+
+  const draftComplianceEmail = useCallback(async (issueId) => {
     setLoading(true); setError(null);
     try {
-      const res = await fetch(`${API_BASE}/ai/compliance-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ issue_id: issueId }),
-      });
-      if (!res.ok) throw new Error('Failed to draft email');
-      return await res.json();
+      const response = await apiClient.post('/ai/compliance-email', { issue_id: issueId });
+      return response.data;
     } catch (err) {
-      setError(err.message); return null;
+      setError(err.message || 'Failed to generate email');
+      return null;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  return { loading, error, fetchIssues, getScore, summarizePolicy, draftEmail };
+  return {
+    loading,
+    error,
+    fetchIssues,
+    fetchPolicies,
+    getScore,
+    summarizePolicy,
+    draftComplianceEmail
+  };
 };
